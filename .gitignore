@@ -3,6 +3,8 @@ __pycache__/
 .venv/
 dist/
 *.egg-info/
+mutants/
+.mutmut-cache
 .env
 .env.*
 !.env.example
