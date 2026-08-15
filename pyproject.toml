@@ -7,7 +7,7 @@ dependencies = ["requests>=2.31.0,<3", "feedparser>=6.0.11,<7"]
 
 [project.optional-dependencies]
 test = ["pytest>=8", "pytest-httpserver"]
-dev = ["ruff==0.16.1"]
+dev = ["ruff==0.16.1", "vulture>=2.16", "mutmut>=3"]
 
 [build-system]
 requires = ["hatchling"]
@@ -17,6 +17,20 @@ build-backend = "hatchling.build"
 packages = ["src/feed_commons"]
 
 [tool.pytest.ini_options]
+# `mutants/` is mutmut's own generated sandbox (gitignored, never meant to be
+# collected) -- without this, a `mutmut run` that mirrors `tests/` into
+# `mutants/tests/` causes pytest's own default collection to pick up two
+# files with the same module name, breaking collection repo-wide. Matches
+# scraper-commons' own established fix for the same issue.
+norecursedirs = ["mutants", ".git", ".venv", "dist", "*.egg-info"]
 markers = [
     "network: tests requiring live internet access",
 ]
+
+[tool.mutmut]
+source_paths = ["src/feed_commons"]
+also_copy = ["src/feed_commons"]
+pytest_add_cli_args_test_selection = ["-m", "not network", "tests/"]
+
+[tool.vulture]
+min_confidence = 80
