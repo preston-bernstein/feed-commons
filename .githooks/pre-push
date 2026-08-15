@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# feed-commons pre-push secret gate.
+# Scans the exact commits about to be pushed (full content, not just the tip)
+# so nothing reaches a remote — especially the GitHub mirror — with a secret in
+# history. Fail closed: gitleaks missing => push blocked.
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+CONFIG="$REPO_ROOT/.gitleaks.toml"
+ZERO="0000000000000000000000000000000000000000"
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "BLOCKED: gitleaks not installed — cannot verify pushed history is clean." >&2
+  echo "Install: brew install gitleaks   (or see scripts/install-hooks.sh)" >&2
+  exit 1
+fi
+
+# stdin: <local ref> <local sha> <remote ref> <remote sha>  (one line per ref)
+status=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [[ -z "${local_sha:-}" ]] && continue
+  # Branch deletion — nothing to scan.
+  [[ "$local_sha" == "$ZERO" ]] && continue
+
+  if [[ "$remote_sha" == "$ZERO" ]]; then
+    # New branch on the remote: scan every commit reachable here but not on any
+    # already-pushed ref, so we don't rescan the whole world each new branch.
+    log_opts="$local_sha --not --remotes"
+  else
+    log_opts="${remote_sha}..${local_sha}"
+  fi
+
+  if ! gitleaks git --no-banner --redact -c "$CONFIG" \
+        --log-opts="$log_opts" "$REPO_ROOT"; then
+    echo "BLOCKED: gitleaks found a potential secret in commits being pushed to $remote_ref." >&2
+    status=1
+  fi
+done
+
+if [[ "$status" -ne 0 ]]; then
+  echo "Push aborted. Scrub the secret from history (git rebase / filter-repo) before pushing." >&2
+  exit 1
+fi
