@@ -1,0 +1,26 @@
+# gitleaks config for feed-commons
+# Extends the built-in ruleset (AWS/GCP/private-keys/generic API tokens/etc.)
+# — this repo mostly holds no-auth feed-polling code, but shares the same
+# gate as every other commons repo so a future authenticated feed source
+# doesn't slip a credential into history by accident.
+#
+# The pre-commit + pre-push hooks (.githooks/) run gitleaks against this file.
+# Precedence: -c flag wins; otherwise gitleaks auto-loads (repo)/.gitleaks.toml.
+
+title = "feed-commons secret scan"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Global allowlist — example/template files and this config's own patterns"
+paths = [
+  '''\.gitleaks\.toml$''',
+  '''(^|/)\.env\.(example|sample|template)$''',
+  '''(^|/)CONTRACT\.md$''',
+  '''(^|/)README\.md$''',
+]
+# Common placeholder values so example files with obvious dummies don't trip.
+regexes = [
+  '''(?i)(your|example|placeholder|changeme|redacted|xxx+|<[a-z_ -]+>)''',
+]
