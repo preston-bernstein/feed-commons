@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# feed-commons pre-commit secret gate.
+# Two layers: (1) hard-block any real .env file from being tracked, (2) run
+# gitleaks against the staged diff. Fail closed — if gitleaks is missing the
+# commit is blocked, not waved through.
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+CONFIG="$REPO_ROOT/.gitleaks.toml"
+
+# ---- Layer 1: never commit a real secrets file --------------------------------
+# Block staged .env / *.env / .env.<x> unless it's an example/sample/template.
+staged_env="$(git diff --cached --name-only --diff-filter=AM \
+  | grep -E '(^|/)\.env($|\.[^/]*$)|(^|/)[^/]*\.env$' \
+  | grep -Ev '\.(example|sample|template)$' || true)"
+if [[ -n "$staged_env" ]]; then
+  echo "BLOCKED: refusing to commit a secrets file:" >&2
+  echo "$staged_env" | sed 's/^/  - /' >&2
+  echo "Keep real .env files out of git (chmod 600, gitignored). Commit .env.example instead." >&2
+  exit 1
+fi
+
+# ---- Layer 2: gitleaks staged scan --------------------------------------------
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "BLOCKED: gitleaks not installed — cannot verify no secrets are staged." >&2
+  echo "Install: brew install gitleaks   (or see scripts/install-hooks.sh)" >&2
+  exit 1
+fi
+
+if ! gitleaks git --staged --no-banner --redact -c "$CONFIG" "$REPO_ROOT"; then
+  echo "BLOCKED: gitleaks found a potential secret in the staged changes (see above)." >&2
+  echo "If it is a genuine false positive, add an inline 'gitleaks:allow' comment or update .gitleaks.toml." >&2
+  exit 1
+fi
