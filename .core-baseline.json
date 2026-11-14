@@ -1,0 +1,13 @@
+{
+ "_reason": "Existing over-limit functions accepted on 2026-11-13; new code must stay within the limits. Fix them when touched.",
+ "functions": {
+  "src/feed_commons/fetch.py::fetch_feed_bytes": {
+   "nloc": 37,
+   "ccn": 13,
+   "length": 48,
+   "nd": 0,
+   "param": 2,
+   "token": 202
+  }
+ }
+}
