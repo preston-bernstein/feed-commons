@@ -137,12 +137,8 @@ def test_main_prints_degraded_status_when_entries_are_skipped(httpserver, capsys
 # --- AC16: HTTP 500 -> status fail, exit code 1 -----------------------------
 
 
-def test_main_prints_fail_status_and_returns_nonzero_on_http_error(
-    httpserver, capsys
-):
-    httpserver.expect_request("/broken.xml").respond_with_data(
-        "server error", status=500
-    )
+def test_main_prints_fail_status_and_returns_nonzero_on_http_error(httpserver, capsys):
+    httpserver.expect_request("/broken.xml").respond_with_data("server error", status=500)
     url = httpserver.url_for("/broken.xml")
 
     with _bypass_scheme_check():
@@ -172,7 +168,7 @@ def test_subprocess_cli_rejects_non_https_url_with_real_process(httpserver):
     url = httpserver.url_for("/feed.xml")
     assert url.startswith("http://")
 
-    result = subprocess.run(
+    result = subprocess.run(  # noqa: S603 -- fixed argv, no user input
         [sys.executable, "-m", "feed_commons", "poll", url, "--json"],
         capture_output=True,
         text=True,

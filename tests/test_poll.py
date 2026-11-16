@@ -124,10 +124,13 @@ def test_run_poll_reports_items_and_skipped_count(httpserver):
 
 
 def test_run_poll_maps_unanticipated_exception_to_network_error():
-    with patch(
-        "feed_commons.poll.fetch_feed_bytes",
-        side_effect=ValueError("boom, unexpected"),
-    ), pytest.raises(PollError) as exc_info:
+    with (
+        patch(
+            "feed_commons.poll.fetch_feed_bytes",
+            side_effect=ValueError("boom, unexpected"),
+        ),
+        pytest.raises(PollError) as exc_info,
+    ):
         _run_poll("https://example.com/feed.xml", 300, 15)
 
     assert exc_info.value.code == "network_error"
@@ -141,10 +144,13 @@ def test_run_poll_maps_unanticipated_exception_to_network_error():
 
 
 def test_run_poll_propagates_lower_layer_poll_error_unchanged():
-    with patch(
-        "feed_commons.poll.fetch_feed_bytes",
-        side_effect=PollError("timeout"),
-    ), pytest.raises(PollError) as exc_info:
+    with (
+        patch(
+            "feed_commons.poll.fetch_feed_bytes",
+            side_effect=PollError("timeout"),
+        ),
+        pytest.raises(PollError) as exc_info,
+    ):
         _run_poll("https://example.com/feed.xml", 300, 15)
 
     assert exc_info.value.code == "timeout"
@@ -196,7 +202,9 @@ def test_run_poll_raises_poll_error_with_exact_classify_parse_outcome_code():
     with (
         patch("feed_commons.poll.fetch_feed_bytes", return_value=b"data"),
         patch("feed_commons.poll.parse_feed", return_value=object()),
-        patch("feed_commons.poll.classify_parse_outcome", return_value="malformed_feed") as mock_classify,
+        patch(
+            "feed_commons.poll.classify_parse_outcome", return_value="malformed_feed"
+        ) as mock_classify,
         pytest.raises(PollError) as exc_info,
     ):
         _run_poll("https://example.com/feed.xml", 300, 15)

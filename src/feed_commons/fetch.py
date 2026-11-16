@@ -64,9 +64,9 @@ def fetch_feed_bytes(url: str, timeout_seconds: float) -> bytes:
             return bytes(body)
         finally:
             response.close()
-    except requests.exceptions.Timeout:
-        raise PollError("timeout")
-    except requests.exceptions.ConnectionError:
-        raise PollError("network_error")
-    except requests.exceptions.RequestException:
-        raise PollError("network_error")
+    except requests.exceptions.Timeout as exc:
+        raise PollError("timeout") from exc
+    except requests.exceptions.ConnectionError as exc:
+        raise PollError("network_error") from exc
+    except requests.exceptions.RequestException as exc:
+        raise PollError("network_error") from exc

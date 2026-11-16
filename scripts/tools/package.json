@@ -1,0 +1,8 @@
+{
+  "name": "feed-commons-gate-tools",
+  "private": true,
+  "description": "Pinned Node tools for the core gate.",
+  "dependencies": {
+    "jscpd": "5.4.3"
+  }
+}

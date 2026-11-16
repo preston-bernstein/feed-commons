@@ -5,9 +5,16 @@ description = "Shared RSS/Atom feed polling library for home-lab projects — fe
 requires-python = ">=3.11"
 dependencies = ["requests>=2.31.0,<3", "feedparser>=6.0.11,<7"]
 
-[project.optional-dependencies]
-test = ["pytest>=8", "pytest-httpserver"]
-dev = ["ruff==0.16.1", "vulture>=2.16", "mutmut>=3"]
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-httpserver",
+    "ruff==0.16.1",
+    "mypy>=1.10",
+    "types-requests",
+    "vulture>=2.16",
+    "mutmut>=3",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -23,6 +30,8 @@ packages = ["src/feed_commons"]
 # files with the same module name, breaking collection repo-wide. Matches
 # scraper-commons' own established fix for the same issue.
 norecursedirs = ["mutants", ".git", ".venv", "dist", "*.egg-info"]
+testpaths = ["tests"]
+addopts = ["--strict-markers", "--strict-config"]
 markers = [
     "network: tests requiring live internet access",
 ]
@@ -35,8 +44,32 @@ pytest_add_cli_args_test_selection = ["-m", "not network", "tests/"]
 [tool.vulture]
 min_confidence = 80
 
+[tool.ruff]
+line-length = 100
+# Vendored pack gate scripts, copied unchanged. Do not lint or reformat them.
+extend-exclude = ["scripts"]
+
 [tool.ruff.lint]
-# Pin the rule set explicitly. With no select, ruff applies its own default,
-# which has widened across releases -- a ruff upgrade alone could then turn CI
-# red with no change here. This is ruff's long-standing default, written down.
-select = ["E4", "E7", "E9", "F"]
+# Pinned on purpose: ruff's default set has changed between releases. The ignore
+# list stays empty, so every exception is a `# noqa: CODE -- reason` in the code.
+select = [
+    "E", "F", "I", "N", "UP",
+    "S", "B", "BLE",
+    "ASYNC",
+    "ANN",
+    "T20",
+    "G",
+    "PGH", "RUF",
+]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "ANN"]
+
+[tool.mypy]
+strict = true
+files = ["src"]
+
+[[tool.mypy.overrides]]
+module = "feedparser.*"
+ignore_missing_imports = true
