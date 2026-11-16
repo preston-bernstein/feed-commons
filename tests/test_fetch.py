@@ -110,9 +110,7 @@ def test_fetch_feed_bytes_raises_timeout(httpserver):
 
 
 def test_fetch_feed_bytes_raises_http_error_on_404(httpserver):
-    httpserver.expect_request("/missing.xml").respond_with_data(
-        "not found", status=404
-    )
+    httpserver.expect_request("/missing.xml").respond_with_data("not found", status=404)
     url = httpserver.url_for("/missing.xml")
 
     with _bypass_scheme_check(), pytest.raises(PollError) as exc_info:
@@ -121,9 +119,7 @@ def test_fetch_feed_bytes_raises_http_error_on_404(httpserver):
 
 
 def test_fetch_feed_bytes_raises_http_error_on_500(httpserver):
-    httpserver.expect_request("/broken.xml").respond_with_data(
-        "server error", status=500
-    )
+    httpserver.expect_request("/broken.xml").respond_with_data("server error", status=500)
     url = httpserver.url_for("/broken.xml")
 
     with _bypass_scheme_check(), pytest.raises(PollError) as exc_info:
@@ -218,9 +214,7 @@ def _make_mock_response(status_code=200, headers=None, chunks=(b"ok",)):
 
 def test_fetch_feed_bytes_validates_real_url_and_calls_requests_get_correctly():
     mock_response = _make_mock_response(status_code=200, chunks=[b"<rss></rss>"])
-    with patch(
-        "feed_commons.fetch.requests.get", return_value=mock_response
-    ) as mock_get:
+    with patch("feed_commons.fetch.requests.get", return_value=mock_response) as mock_get:
         result = fetch_feed_bytes("https://example.com/feed.xml", 15)
 
     assert result == b"<rss></rss>"
@@ -236,9 +230,10 @@ def test_fetch_feed_bytes_validates_real_url_and_calls_requests_get_correctly():
 
 def test_fetch_feed_bytes_rejects_non_https_url_before_calling_requests_get():
     mock_response = _make_mock_response()
-    with patch(
-        "feed_commons.fetch.requests.get", return_value=mock_response
-    ) as mock_get, pytest.raises(PollError) as exc_info:
+    with (
+        patch("feed_commons.fetch.requests.get", return_value=mock_response) as mock_get,
+        pytest.raises(PollError) as exc_info,
+    ):
         fetch_feed_bytes("http://not-https.com/feed.xml", 15)
 
     assert exc_info.value.code == "invalid_url"
@@ -318,7 +313,9 @@ def test_fetch_feed_bytes_content_length_header_non_integer_is_ignored():
 def test_fetch_feed_bytes_body_size_exactly_at_cap_succeeds(monkeypatch):
     monkeypatch.setattr("feed_commons.fetch._MAX_RESPONSE_BYTES", 10)
     mock_response = _make_mock_response(
-        status_code=200, headers={}, chunks=[b"0123456789"]  # exactly 10 bytes
+        status_code=200,
+        headers={},
+        chunks=[b"0123456789"],  # exactly 10 bytes
     )
     with patch("feed_commons.fetch.requests.get", return_value=mock_response):
         result = fetch_feed_bytes("https://example.com/feed.xml", 15)
@@ -328,7 +325,9 @@ def test_fetch_feed_bytes_body_size_exactly_at_cap_succeeds(monkeypatch):
 def test_fetch_feed_bytes_body_size_over_cap_raises_http_error(monkeypatch):
     monkeypatch.setattr("feed_commons.fetch._MAX_RESPONSE_BYTES", 10)
     mock_response = _make_mock_response(
-        status_code=200, headers={}, chunks=[b"12345", b"67890", b"X"]  # 11 bytes total
+        status_code=200,
+        headers={},
+        chunks=[b"12345", b"67890", b"X"],  # 11 bytes total
     )
     with (
         patch("feed_commons.fetch.requests.get", return_value=mock_response),
@@ -351,28 +350,37 @@ def test_fetch_feed_bytes_skips_empty_chunks_without_stopping_the_stream():
 
 
 def test_fetch_feed_bytes_maps_connect_timeout_to_timeout_code():
-    with patch(
-        "feed_commons.fetch.requests.get",
-        side_effect=requests.exceptions.ConnectTimeout(),
-    ), pytest.raises(PollError) as exc_info:
+    with (
+        patch(
+            "feed_commons.fetch.requests.get",
+            side_effect=requests.exceptions.ConnectTimeout(),
+        ),
+        pytest.raises(PollError) as exc_info,
+    ):
         fetch_feed_bytes("https://example.com/feed.xml", 15)
     assert exc_info.value.code == "timeout"
 
 
 def test_fetch_feed_bytes_maps_read_timeout_to_timeout_code():
-    with patch(
-        "feed_commons.fetch.requests.get",
-        side_effect=requests.exceptions.ReadTimeout(),
-    ), pytest.raises(PollError) as exc_info:
+    with (
+        patch(
+            "feed_commons.fetch.requests.get",
+            side_effect=requests.exceptions.ReadTimeout(),
+        ),
+        pytest.raises(PollError) as exc_info,
+    ):
         fetch_feed_bytes("https://example.com/feed.xml", 15)
     assert exc_info.value.code == "timeout"
 
 
 def test_fetch_feed_bytes_maps_connection_error_to_network_error_code():
-    with patch(
-        "feed_commons.fetch.requests.get",
-        side_effect=requests.exceptions.ConnectionError(),
-    ), pytest.raises(PollError) as exc_info:
+    with (
+        patch(
+            "feed_commons.fetch.requests.get",
+            side_effect=requests.exceptions.ConnectionError(),
+        ),
+        pytest.raises(PollError) as exc_info,
+    ):
         fetch_feed_bytes("https://example.com/feed.xml", 15)
     assert exc_info.value.code == "network_error"
 
@@ -386,9 +394,12 @@ def test_fetch_feed_bytes_maps_generic_request_exception_to_network_error_code()
     class SomeOtherRequestException(requests.exceptions.RequestException):
         pass
 
-    with patch(
-        "feed_commons.fetch.requests.get",
-        side_effect=SomeOtherRequestException(),
-    ), pytest.raises(PollError) as exc_info:
+    with (
+        patch(
+            "feed_commons.fetch.requests.get",
+            side_effect=SomeOtherRequestException(),
+        ),
+        pytest.raises(PollError) as exc_info,
+    ):
         fetch_feed_bytes("https://example.com/feed.xml", 15)
     assert exc_info.value.code == "network_error"

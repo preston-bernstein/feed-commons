@@ -1,1 +1,2 @@
 CORE_DUP_THRESHOLD=5  # existing duplication is 4.90%; lower it as clones are removed
+CORE_EXCLUDE=*/scripts/*  # vendored pack gate scripts and Vale styles, copied unchanged from the packs

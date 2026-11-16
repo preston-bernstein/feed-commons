@@ -1,3 +1,5 @@
+from typing import Any
+
 import feedparser
 import feedparser.exceptions
 
@@ -9,11 +11,11 @@ BENIGN_BOZO_EXCEPTIONS = (
 )
 
 
-def parse_feed(raw_bytes: bytes):
+def parse_feed(raw_bytes: bytes) -> Any:  # noqa: ANN401 -- feedparser ships no types
     return feedparser.parse(raw_bytes)
 
 
-def classify_parse_outcome(parsed) -> PollErrorCode | None:
+def classify_parse_outcome(parsed: Any) -> PollErrorCode | None:  # noqa: ANN401 -- feedparser result, no types
     if parsed.bozo != 1:
         return None
 

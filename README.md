@@ -62,9 +62,9 @@ A failed poll raises `PollError`. Its `code` is one of `timeout`, `invalid_url`,
 ## Set up for development
 
 1. Clone the repo and run `cd feed-commons`.
-2. Run `pip install -e ".[test,dev]"`.
-3. Run `pytest -m "not network"`.
-4. Run `ruff check .`.
+2. Run `uv sync`.
+3. Run `bash scripts/install-gate-tools.sh`, then put `~/.cache/feed-commons-gates/bin` on `PATH`.
+4. Run `bash scripts/py-validate.sh`. The other gates are listed in `AGENTS.md`.
 5. Run `scripts/install-hooks.sh` once per clone. It turns on the git hooks and needs `gitleaks`.
 
 ## Where things live
