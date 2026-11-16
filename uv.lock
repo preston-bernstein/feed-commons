@@ -381,6 +381,17 @@ dependencies = [
     { name = "requests" },
 ]
 
+[package.optional-dependencies]
+dev = [
+    { name = "mutmut" },
+    { name = "ruff" },
+    { name = "vulture" },
+]
+test = [
+    { name = "pytest" },
+    { name = "pytest-httpserver" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "mutmut" },
@@ -395,8 +406,14 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "feedparser", specifier = ">=6.0.11,<7" },
+    { name = "mutmut", marker = "extra == 'dev'", specifier = ">=3" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8" },
+    { name = "pytest-httpserver", marker = "extra == 'test'" },
     { name = "requests", specifier = ">=2.31.0,<3" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = "==0.16.1" },
+    { name = "vulture", marker = "extra == 'dev'", specifier = ">=2.16" },
 ]
+provides-extras = ["test", "dev"]
 
 [package.metadata.requires-dev]
 dev = [
