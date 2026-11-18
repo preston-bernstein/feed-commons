@@ -32,58 +32,13 @@ import pytest
 from feed_commons.cli import _build_parser, main
 from feed_commons.errors import PollError
 from feed_commons.poll import _PollOutcome
+from tests.sample_feeds import (
+    RSS_MIXED_VALID_INVALID,
+    RSS_TWO_VALID_ITEMS,
+    bypass_scheme_check,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-
-
-def _bypass_scheme_check():
-    """No-op the HTTPS-only check inside fetch.py for tests that need to hit
-    a real (plain-HTTP) local test server. See module docstring above.
-    """
-    return patch("feed_commons.fetch.validate_https_url", lambda url: None)
-
-
-RSS_TWO_VALID_ITEMS = b"""<?xml version="1.0"?>
-<rss version="2.0">
-<channel>
-<title>Test Feed</title>
-<item>
-<title>Item 1</title>
-<link>https://example.com/1</link>
-<description>First item body</description>
-</item>
-<item>
-<title>Item 2</title>
-<link>https://example.com/2</link>
-<description>Second item body</description>
-</item>
-</channel>
-</rss>
-"""
-
-RSS_MIXED_VALID_INVALID = b"""<?xml version="1.0"?>
-<rss version="2.0">
-<channel>
-<title>Mixed Feed</title>
-<item>
-<title>Valid Item 1</title>
-<link>https://example.com/valid1</link>
-</item>
-<item>
-<title></title>
-<link>https://example.com/no-title</link>
-</item>
-<item>
-<title>No Link Item</title>
-<link></link>
-</item>
-<item>
-<title>Valid Item 2</title>
-<link>https://example.com/valid2</link>
-</item>
-</channel>
-</rss>
-"""
 
 
 # --- AC14: all-clean feed -> status ok, exit code 0 ------------------------
@@ -95,7 +50,7 @@ def test_main_prints_ok_status_and_returns_zero_on_clean_feed(httpserver, capsys
     )
     url = httpserver.url_for("/feed.xml")
 
-    with _bypass_scheme_check():
+    with bypass_scheme_check():
         exit_code = main(["poll", url, "--json"])
 
     assert exit_code == 0
@@ -119,7 +74,7 @@ def test_main_prints_degraded_status_when_entries_are_skipped(httpserver, capsys
     )
     url = httpserver.url_for("/mixed.xml")
 
-    with _bypass_scheme_check():
+    with bypass_scheme_check():
         exit_code = main(["poll", url, "--json"])
 
     assert exit_code == 0
@@ -141,7 +96,7 @@ def test_main_prints_fail_status_and_returns_nonzero_on_http_error(httpserver, c
     httpserver.expect_request("/broken.xml").respond_with_data("server error", status=500)
     url = httpserver.url_for("/broken.xml")
 
-    with _bypass_scheme_check():
+    with bypass_scheme_check():
         exit_code = main(["poll", url, "--json"])
 
     assert exit_code == 1
@@ -164,12 +119,9 @@ def test_main_prints_fail_status_and_returns_nonzero_on_http_error(httpserver, c
 # --- Subprocess-level end-to-end: real `python -m feed_commons` process ----
 
 
-def test_subprocess_cli_rejects_non_https_url_with_real_process(httpserver):
-    url = httpserver.url_for("/feed.xml")
-    assert url.startswith("http://")
-
-    result = subprocess.run(  # noqa: S603 -- fixed argv, no user input
-        [sys.executable, "-m", "feed_commons", "poll", url, "--json"],
+def test_subprocess_cli_rejects_non_https_url_with_real_process():
+    result = subprocess.run(
+        [sys.executable, "-m", "feed_commons", "poll", "http://127.0.0.1:1/feed.xml", "--json"],
         capture_output=True,
         text=True,
         cwd=str(REPO_ROOT),

@@ -31,7 +31,7 @@ Run each gate from the repo root before you say a task is done. CI and `.githook
 ## Repo traps
 
 - `scripts/*-validate.sh`, `scripts/*-check.py`, `scripts/core-lizard.py`, `scripts/vale-central.ini` and `scripts/styles/` are copies from the packs. Do not edit them. Update them by copying a new pack version.
-- `.core-baseline.json` and `.core-config` may only shrink. Fix `fetch_feed_bytes` instead of raising its numbers.
+- `.core-config` may only shrink. There is no `.core-baseline.json`: fix an over-limit function, do not baseline it.
 - Lizard is pinned in `scripts/tools/gate-requirements.txt`. A baseline from another lizard version can fail. Write it with the pinned one.
 - Add a dependency with `uv add`. Ask before you add a production dependency. Commit `uv.lock`.
 

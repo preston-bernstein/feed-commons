@@ -1,1 +1,6 @@
-scripts/** # vendored pack gate scripts and Vale styles, copied unchanged
+scripts/styles/** # vendored Vale styles, copied unchanged from the packs
+scripts/*-validate.sh # vendored pack gate scripts, copied unchanged
+scripts/*-check.py # vendored pack checkers, copied unchanged
+scripts/core-lizard.py # vendored pack checker, copied unchanged
+scripts/vale-central.ini # vendored pack Vale config, copied unchanged
+scripts/tools/** # pinned tool lockfiles
