@@ -1,3 +1,5 @@
+from typing import Any, Protocol, cast
+
 import feedparser
 import feedparser.exceptions
 
@@ -9,11 +11,19 @@ BENIGN_BOZO_EXCEPTIONS = (
 )
 
 
-def parse_feed(raw_bytes: bytes):
-    return feedparser.parse(raw_bytes)
+class ParsedFeed(Protocol):
+    """The part of a feedparser result this package reads. feedparser ships no types."""
+
+    bozo: int
+    bozo_exception: object
+    entries: list[dict[str, Any]]
 
 
-def classify_parse_outcome(parsed) -> PollErrorCode | None:
+def parse_feed(raw_bytes: bytes) -> ParsedFeed:
+    return cast(ParsedFeed, feedparser.parse(raw_bytes))
+
+
+def classify_parse_outcome(parsed: ParsedFeed) -> PollErrorCode | None:
     if parsed.bozo != 1:
         return None
 

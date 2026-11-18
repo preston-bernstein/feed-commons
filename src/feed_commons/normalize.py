@@ -1,7 +1,7 @@
 import calendar
 from datetime import UTC, datetime
 from html.parser import HTMLParser
-from typing import TypedDict
+from typing import Any, TypedDict, cast
 
 
 class NormalizedItem(TypedDict):
@@ -24,7 +24,7 @@ class _TextExtractor(HTMLParser):
         return "".join(self._chunks)
 
 
-def resolve_guid(entry: dict, link: str) -> str:
+def resolve_guid(entry: dict[str, Any], link: str) -> str:
     raw_id = entry.get("id")
     if raw_id is not None:
         stripped = str(raw_id).strip()
@@ -35,16 +35,16 @@ def resolve_guid(entry: dict, link: str) -> str:
     return ""
 
 
-def extract_description(entry: dict) -> str:
+def extract_description(entry: dict[str, Any]) -> str:
     content = entry.get("content")
     if content:
         first = content[0]
         if hasattr(first, "get"):
-            return first.get("value", "")
-        return getattr(first, "value", "")
+            return cast(str, first.get("value", ""))
+        return cast(str, getattr(first, "value", ""))
     summary = entry.get("summary")
     if summary:
-        return summary
+        return cast(str, summary)
     return ""
 
 
@@ -56,7 +56,7 @@ def strip_html_and_truncate(text: str, max_length: int) -> str:
     return stripped[:max_length]
 
 
-def normalize_pub_date(entry: dict) -> str | None:
+def normalize_pub_date(entry: dict[str, Any]) -> str | None:
     struct_time = entry.get("published_parsed") or entry.get("updated_parsed")
     if struct_time is None:
         return None
@@ -64,7 +64,7 @@ def normalize_pub_date(entry: dict) -> str | None:
     return datetime.fromtimestamp(ts, tz=UTC).isoformat()
 
 
-def normalize_entry(entry: dict, excerpt_max_length: int) -> NormalizedItem | None:
+def normalize_entry(entry: dict[str, Any], excerpt_max_length: int) -> NormalizedItem | None:
     title = entry.get("title", "").strip()
     link = entry.get("link", "").strip()
 

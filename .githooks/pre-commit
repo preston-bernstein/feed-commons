@@ -32,3 +32,9 @@ if ! gitleaks git --staged --no-banner --redact -c "$CONFIG" "$REPO_ROOT"; then
   echo "If it is a genuine false positive, add an inline 'gitleaks:allow' comment or update .gitleaks.toml." >&2
   exit 1
 fi
+
+# ---- Layer 3: the stack-pack gates --------------------------------------------
+# CI runs the same scripts, because a hook can be skipped. Never use --no-verify.
+for gate in core gha py shell writing; do
+  bash "$REPO_ROOT/scripts/${gate}-validate.sh"
+done

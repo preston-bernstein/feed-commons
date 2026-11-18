@@ -24,57 +24,11 @@ import pytest
 
 from feed_commons.errors import PollError
 from feed_commons.poll import _PollOutcome, _run_poll, poll
-
-
-def _bypass_scheme_check():
-    """No-op the HTTPS-only check inside fetch.py for tests that need to hit
-    a real (plain-HTTP) local test server. See module docstring above.
-    """
-    return patch("feed_commons.fetch.validate_https_url", lambda url: None)
-
-
-RSS_TWO_VALID_ITEMS = b"""<?xml version="1.0"?>
-<rss version="2.0">
-<channel>
-<title>Test Feed</title>
-<item>
-<title>Item 1</title>
-<link>https://example.com/1</link>
-<description>First item body</description>
-</item>
-<item>
-<title>Item 2</title>
-<link>https://example.com/2</link>
-<description>Second item body</description>
-</item>
-</channel>
-</rss>
-"""
-
-RSS_MIXED_VALID_INVALID = b"""<?xml version="1.0"?>
-<rss version="2.0">
-<channel>
-<title>Mixed Feed</title>
-<item>
-<title>Valid Item 1</title>
-<link>https://example.com/valid1</link>
-</item>
-<item>
-<title></title>
-<link>https://example.com/no-title</link>
-</item>
-<item>
-<title>No Link Item</title>
-<link></link>
-</item>
-<item>
-<title>Valid Item 2</title>
-<link>https://example.com/valid2</link>
-</item>
-</channel>
-</rss>
-"""
-
+from tests.sample_feeds import (
+    RSS_MIXED_VALID_INVALID,
+    RSS_TWO_VALID_ITEMS,
+    bypass_scheme_check,
+)
 
 # --- AC6: successful fetch + parse -> normalized items, no error ----------
 
@@ -85,7 +39,7 @@ def test_poll_returns_normalized_items_on_success(httpserver):
     )
     url = httpserver.url_for("/feed.xml")
 
-    with _bypass_scheme_check():
+    with bypass_scheme_check():
         items = poll(url, excerpt_max_length=300, timeout_seconds=5)
 
     assert isinstance(items, list)
@@ -110,7 +64,7 @@ def test_run_poll_reports_items_and_skipped_count(httpserver):
     )
     url = httpserver.url_for("/mixed.xml")
 
-    with _bypass_scheme_check():
+    with bypass_scheme_check():
         outcome = _run_poll(url, 300, 15)
 
     assert isinstance(outcome, _PollOutcome)
@@ -124,10 +78,13 @@ def test_run_poll_reports_items_and_skipped_count(httpserver):
 
 
 def test_run_poll_maps_unanticipated_exception_to_network_error():
-    with patch(
-        "feed_commons.poll.fetch_feed_bytes",
-        side_effect=ValueError("boom, unexpected"),
-    ), pytest.raises(PollError) as exc_info:
+    with (
+        patch(
+            "feed_commons.poll.fetch_feed_bytes",
+            side_effect=ValueError("boom, unexpected"),
+        ),
+        pytest.raises(PollError) as exc_info,
+    ):
         _run_poll("https://example.com/feed.xml", 300, 15)
 
     assert exc_info.value.code == "network_error"
@@ -141,10 +98,13 @@ def test_run_poll_maps_unanticipated_exception_to_network_error():
 
 
 def test_run_poll_propagates_lower_layer_poll_error_unchanged():
-    with patch(
-        "feed_commons.poll.fetch_feed_bytes",
-        side_effect=PollError("timeout"),
-    ), pytest.raises(PollError) as exc_info:
+    with (
+        patch(
+            "feed_commons.poll.fetch_feed_bytes",
+            side_effect=PollError("timeout"),
+        ),
+        pytest.raises(PollError) as exc_info,
+    ):
         _run_poll("https://example.com/feed.xml", 300, 15)
 
     assert exc_info.value.code == "timeout"
@@ -196,7 +156,9 @@ def test_run_poll_raises_poll_error_with_exact_classify_parse_outcome_code():
     with (
         patch("feed_commons.poll.fetch_feed_bytes", return_value=b"data"),
         patch("feed_commons.poll.parse_feed", return_value=object()),
-        patch("feed_commons.poll.classify_parse_outcome", return_value="malformed_feed") as mock_classify,
+        patch(
+            "feed_commons.poll.classify_parse_outcome", return_value="malformed_feed"
+        ) as mock_classify,
         pytest.raises(PollError) as exc_info,
     ):
         _run_poll("https://example.com/feed.xml", 300, 15)
