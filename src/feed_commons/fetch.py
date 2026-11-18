@@ -22,6 +22,38 @@ def validate_https_url(url: str) -> None:
         raise PollError("invalid_url")
 
 
+def _check_declared_length(response: requests.Response) -> None:
+    """Reject a response whose Content-Length header is over the cap."""
+    content_length = response.headers.get("Content-Length")
+    if content_length is None:
+        return
+    try:
+        declared_length = int(content_length)
+    except ValueError:
+        return
+    if declared_length > _MAX_RESPONSE_BYTES:
+        raise PollError("http_error")
+
+
+def _read_capped_body(response: requests.Response) -> bytes:
+    """Read the body in chunks and stop as soon as it passes the cap."""
+    body = bytearray()
+    for chunk in response.iter_content(chunk_size=_CHUNK_SIZE):
+        if not chunk:
+            continue
+        body.extend(chunk)
+        if len(body) > _MAX_RESPONSE_BYTES:
+            raise PollError("http_error")
+    return bytes(body)
+
+
+def _read_response(response: requests.Response) -> bytes:
+    _check_declared_length(response)
+    if not (200 <= response.status_code < 300):
+        raise PollError("http_error")
+    return _read_capped_body(response)
+
+
 def fetch_feed_bytes(url: str, timeout_seconds: float) -> bytes:
     """Fetch the raw bytes of a feed over HTTPS.
 
@@ -41,32 +73,10 @@ def fetch_feed_bytes(url: str, timeout_seconds: float) -> bytes:
             headers={"User-Agent": _USER_AGENT},
         )
         try:
-            content_length = response.headers.get("Content-Length")
-            if content_length is not None:
-                try:
-                    declared_length = int(content_length)
-                except ValueError:
-                    declared_length = None
-                if declared_length is not None and declared_length > _MAX_RESPONSE_BYTES:
-                    raise PollError("http_error")
-
-            if not (200 <= response.status_code < 300):
-                raise PollError("http_error")
-
-            body = bytearray()
-            for chunk in response.iter_content(chunk_size=_CHUNK_SIZE):
-                if not chunk:
-                    continue
-                body.extend(chunk)
-                if len(body) > _MAX_RESPONSE_BYTES:
-                    raise PollError("http_error")
-
-            return bytes(body)
+            return _read_response(response)
         finally:
             response.close()
     except requests.exceptions.Timeout as exc:
         raise PollError("timeout") from exc
-    except requests.exceptions.ConnectionError as exc:
-        raise PollError("network_error") from exc
     except requests.exceptions.RequestException as exc:
         raise PollError("network_error") from exc

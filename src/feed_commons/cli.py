@@ -1,5 +1,6 @@
 import argparse
 import json
+import sys
 
 from feed_commons.errors import PollError
 from feed_commons.poll import (
@@ -24,6 +25,10 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _write_result(envelope: dict[str, object]) -> None:
+    sys.stdout.write(json.dumps(envelope) + "\n")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -32,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
         outcome = _run_poll(args.url, DEFAULT_EXCERPT_MAX_LENGTH, DEFAULT_TIMEOUT_SECONDS)
     except PollError as e:
         envelope: dict[str, object] = {"status": "fail", "items": [], "error": e.code}
-        print(json.dumps(envelope))  # noqa: T201 -- the CLI result goes to stdout
+        _write_result(envelope)
         return 1
 
     degraded = outcome.skipped_count > 0
@@ -41,5 +46,5 @@ def main(argv: list[str] | None = None) -> int:
         "items": outcome.items,
         "error": None,
     }
-    print(json.dumps(envelope))  # noqa: T201 -- the CLI result goes to stdout
+    _write_result(envelope)
     return 0
